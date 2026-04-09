@@ -132,6 +132,10 @@ export default function GamePage() {
 
   const q = questions[currentIdx];
 
+  if (!q || !q.options) {
+    return <div style={{ color: "white", textAlign: "center" }}>Loading...</div>;
+  }
+
   return (
     <div className="game-page">
 
@@ -140,14 +144,14 @@ export default function GamePage() {
 
       {/* LOGO */}
       <img
-        src={q?.logoUrl}
+        src={q.logoUrl}
         alt="logo"
         style={{ width: "150px", margin: "20px" }}
       />
 
       {/* OPTIONS */}
       <div>
-        {[q.optionA, q.optionB, q.optionC, q.optionD].map((opt, i) => (
+        {q.options.map((opt, i) => (
           <button
             key={i}
             onClick={() => handleAnswer(opt)}
@@ -156,7 +160,12 @@ export default function GamePage() {
               display: "block",
               margin: "10px auto",
               padding: "10px",
-              width: "200px"
+              width: "200px",
+              backgroundColor: "#222",
+              color: "white",
+              border: "1px solid #555",
+              borderRadius: "6px",
+              cursor: "pointer"
             }}
           >
             {opt}
