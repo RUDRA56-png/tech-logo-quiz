@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL – change for production deployment
-const BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const BASE_URL = "https://tech-logo-quiz.onrender.com/api";
 
 const api = axios.create({
   baseURL: BASE_URL,
