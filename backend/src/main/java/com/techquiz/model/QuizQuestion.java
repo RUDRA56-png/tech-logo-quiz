@@ -19,17 +19,18 @@ public class QuizQuestion {
     @Column(name = "company_name", nullable = false, length = 100)
     private String companyName;
 
-    @Column(nullable = false, length = 100)
-    private String option1;
+    // 🔥 FIX: map DB option1 → optionA
+    @Column(name = "option1", nullable = false, length = 100)
+    private String optionA;
 
-    @Column(nullable = false, length = 100)
-    private String option2;
+    @Column(name = "option2", nullable = false, length = 100)
+    private String optionB;
 
-    @Column(nullable = false, length = 100)
-    private String option3;
+    @Column(name = "option3", nullable = false, length = 100)
+    private String optionC;
 
-    @Column(nullable = false, length = 100)
-    private String option4;
+    @Column(name = "option4", nullable = false, length = 100)
+    private String optionD;
 
     @Column(name = "correct_answer", nullable = false, length = 100)
     private String correctAnswer;
