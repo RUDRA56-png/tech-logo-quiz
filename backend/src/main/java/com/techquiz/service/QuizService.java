@@ -18,9 +18,16 @@ public class QuizService {
     public List<QuestionDTO> getRandomQuestions(int count) {
         List<QuizQuestion> questions = questionRepository.findRandomActiveQuestions(count);
         List<QuestionDTO> dtos = new ArrayList<>();
+
         for (QuizQuestion q : questions) {
-            List<String> options = new ArrayList<>(List.of(q.getOption1(), q.getOption2(), q.getOption3(), q.getOption4()));
+
+            // 🔥 FIXED: use optionA, optionB, optionC, optionD
+            List<String> options = new ArrayList<>(
+                    List.of(q.getOptionA(), q.getOptionB(), q.getOptionC(), q.getOptionD())
+            );
+
             Collections.shuffle(options);
+
             dtos.add(QuestionDTO.builder()
                     .id(q.getId())
                     .logoUrl(q.getLogoUrl())
@@ -28,6 +35,7 @@ public class QuizService {
                     .difficulty(q.getDifficulty())
                     .build());
         }
+
         return dtos;
     }
 
@@ -35,21 +43,25 @@ public class QuizService {
     public boolean checkAnswer(Long questionId, String answer) {
         QuizQuestion q = questionRepository.findById(questionId)
                 .orElseThrow(() -> new RuntimeException("Question not found"));
+
         return q.getCorrectAnswer().equalsIgnoreCase(answer.trim());
     }
 
     /** Admin: add new question. */
     public QuizQuestion addQuestion(QuestionRequest req) {
+
+        // 🔥 FIXED: builder uses optionA/B/C/D
         QuizQuestion q = QuizQuestion.builder()
                 .logoUrl(req.getLogoUrl())
                 .companyName(req.getCompanyName())
-                .option1(req.getOption1())
-                .option2(req.getOption2())
-                .option3(req.getOption3())
-                .option4(req.getOption4())
+                .optionA(req.getOption1())
+                .optionB(req.getOption2())
+                .optionC(req.getOption3())
+                .optionD(req.getOption4())
                 .correctAnswer(req.getCorrectAnswer())
                 .difficulty(req.getDifficulty())
                 .build();
+
         return questionRepository.save(q);
     }
 
