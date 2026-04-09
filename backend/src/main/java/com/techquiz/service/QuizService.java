@@ -16,12 +16,34 @@ public class QuizService {
 
     /** Fetch N random active questions (options shuffled, correct answer hidden). */
     public List<QuestionDTO> getRandomQuestions(int count) {
+
         List<QuizQuestion> questions = questionRepository.findRandomActiveQuestions(count);
+
+        // 🔥 FALLBACK (IMPORTANT)
+        if (questions == null || questions.isEmpty()) {
+            List<QuestionDTO> fallback = new ArrayList<>();
+
+            fallback.add(QuestionDTO.builder()
+                    .id(1L)
+                    .logoUrl("https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg")
+                    .options(List.of("React", "Angular", "Vue", "Svelte"))
+                    .difficulty("EASY")
+                    .build());
+
+            fallback.add(QuestionDTO.builder()
+                    .id(2L)
+                    .logoUrl("https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg")
+                    .options(List.of("Ruby", "Python", "Perl", "Swift"))
+                    .difficulty("EASY")
+                    .build());
+
+            return fallback;
+        }
+
         List<QuestionDTO> dtos = new ArrayList<>();
 
         for (QuizQuestion q : questions) {
 
-            // 🔥 FIXED: use optionA, optionB, optionC, optionD
             List<String> options = new ArrayList<>(
                     List.of(q.getOptionA(), q.getOptionB(), q.getOptionC(), q.getOptionD())
             );
@@ -50,7 +72,6 @@ public class QuizService {
     /** Admin: add new question. */
     public QuizQuestion addQuestion(QuestionRequest req) {
 
-        // 🔥 FIXED: builder uses optionA/B/C/D
         QuizQuestion q = QuizQuestion.builder()
                 .logoUrl(req.getLogoUrl())
                 .companyName(req.getCompanyName())
