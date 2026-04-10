@@ -25,8 +25,7 @@ export default function GamePage() {
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
 
-  // 🔥 NEW
-  const [phase, setPhase] = useState('loading'); // loading | name | playing
+  const [phase, setPhase] = useState('loading');
   const [guestName, setGuestName] = useState('');
 
   const timerRef = useRef(null);
@@ -39,7 +38,7 @@ export default function GamePage() {
         setQuestions(data);
 
         if (isGuest) {
-          setPhase('name'); // 🔥 ask name first
+          setPhase('name');
         } else {
           setPhase('playing');
           sounds.start();
@@ -48,7 +47,7 @@ export default function GamePage() {
       .catch(() => toast.error('Failed to load questions'));
   }, []);
 
-  // 🔥 START GAME AFTER NAME
+  // 🔹 START GAME
   const startGame = () => {
     if (!guestName.trim()) {
       alert("Enter your name");
@@ -58,27 +57,22 @@ export default function GamePage() {
     sounds.start();
   };
 
-  // 🔥 TIMER (ONLY WHEN PLAYING)
+  // 🔥 TIMER FIX (setTimeout method)
   useEffect(() => {
     if (!questions.length || phase !== 'playing') return;
 
-    clearInterval(timerRef.current);
-    setTimeLeft(TIMER_SECONDS);
+    if (timeLeft === 0) {
+      goNext();
+      return;
+    }
 
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          goNext();
-          return TIMER_SECONDS;
-        }
-        return prev - 1;
-      });
+    const timer = setTimeout(() => {
+      setTimeLeft(prev => prev - 1);
     }, 1000);
 
-    return () => clearInterval(timerRef.current);
+    return () => clearTimeout(timer);
 
-  }, [currentIdx, phase]);
+  }, [timeLeft, currentIdx, phase]);
 
   // 🔹 NEXT QUESTION
   const goNext = () => {
@@ -88,6 +82,7 @@ export default function GamePage() {
       setCurrentIdx(prev => prev + 1);
       setSelected(null);
       setFeedback(null);
+      setTimeLeft(TIMER_SECONDS);
     }
   };
 
@@ -97,7 +92,6 @@ export default function GamePage() {
     if (selected !== null) return;
 
     setSelected(option);
-    clearInterval(timerRef.current);
 
     const q = questions[currentIdx];
     let correct = false;
@@ -120,11 +114,10 @@ export default function GamePage() {
 
   // 🔹 FINISH GAME
   const finishGame = async () => {
-
     try {
       await scoreAPI.submit({
         userId: user?.userId || null,
-        guestName: isGuest ? guestName : null, // 🔥 USE REAL NAME
+        guestName: isGuest ? guestName : null,
         score,
         totalQuestions: questions.length,
         correctAnswers: correctCount,
@@ -142,7 +135,7 @@ export default function GamePage() {
     });
   };
 
-  // 🔹 NAME INPUT SCREEN
+  // 🔹 NAME SCREEN
   if (phase === 'name') {
     return (
       <div style={{ textAlign: "center", color: "white", marginTop: "100px" }}>
@@ -151,13 +144,38 @@ export default function GamePage() {
         <input
           value={guestName}
           onChange={(e) => setGuestName(e.target.value)}
-          placeholder="Your name"
-          style={{ padding: "10px", width: "200px", marginBottom: "10px" }}
+          placeholder="Enter your name"
+          style={{
+            padding: "12px",
+            width: "250px",
+            borderRadius: "8px",
+            border: "1px solid #555",
+            outline: "none",
+            fontSize: "16px",
+            marginBottom: "15px",
+            backgroundColor: "#222",
+            color: "white",
+            textAlign: "center"
+          }}
         />
 
         <br />
 
-        <button onClick={startGame}>
+        <button
+          onClick={startGame}
+          style={{
+            padding: "12px 20px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+            transition: "0.3s"
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#45a049"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "#4CAF50"}
+        >
           Start Game
         </button>
       </div>
