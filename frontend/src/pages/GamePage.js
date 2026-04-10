@@ -55,7 +55,7 @@ export default function GamePage() {
     sounds.start();
   };
 
-  // 🔥 TIMER (setTimeout safe version)
+  // 🔥 TIMER
   useEffect(() => {
     if (!questions.length || phase !== 'playing') return;
 
@@ -133,7 +133,7 @@ export default function GamePage() {
     });
   };
 
-  // 🔥 MODERN NAME SCREEN
+  // 🔥 NAME SCREEN (PURPLE + PINK UI)
   if (phase === 'name') {
     return (
       <div style={{
@@ -141,13 +141,13 @@ export default function GamePage() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(135deg, #0f172a, #020617)"
+        background: "linear-gradient(135deg, #4c1d95, #1e1b4b)"
       }}>
 
         <div style={{
-          backgroundColor: "#111827",
+          backgroundColor: "#6d28d9",
           padding: "40px",
-          borderRadius: "16px",
+          borderRadius: "20px",
           boxShadow: "0 0 30px rgba(0,0,0,0.6)",
           textAlign: "center",
           width: "320px"
@@ -167,10 +167,10 @@ export default function GamePage() {
             style={{
               width: "100%",
               padding: "12px",
-              borderRadius: "8px",
-              border: "1px solid #374151",
-              backgroundColor: "#020617",
-              color: "white",
+              borderRadius: "12px",
+              border: "none",
+              backgroundColor: "#ede9fe",
+              color: "#111",
               fontSize: "16px",
               marginBottom: "20px",
               outline: "none"
@@ -182,9 +182,9 @@ export default function GamePage() {
             style={{
               width: "100%",
               padding: "12px",
-              borderRadius: "8px",
+              borderRadius: "12px",
               border: "none",
-              background: "linear-gradient(90deg, #22c55e, #16a34a)",
+              background: "linear-gradient(90deg, #ec4899, #db2777)",
               color: "white",
               fontSize: "16px",
               fontWeight: "bold",
@@ -244,8 +244,7 @@ export default function GamePage() {
                 color: "white",
                 border: "1px solid #555",
                 borderRadius: "6px",
-                cursor: "pointer",
-                transition: "0.2s"
+                cursor: "pointer"
               }}
             >
               {opt}
