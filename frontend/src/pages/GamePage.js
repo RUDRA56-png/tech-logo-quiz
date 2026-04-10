@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { quizAPI, scoreAPI } from '../utils/api';
@@ -28,8 +28,6 @@ export default function GamePage() {
   const [phase, setPhase] = useState('loading');
   const [guestName, setGuestName] = useState('');
 
-  const timerRef = useRef(null);
-
   // 🔹 LOAD QUESTIONS
   useEffect(() => {
     quizAPI.getQuestions(QUESTION_COUNT)
@@ -57,7 +55,7 @@ export default function GamePage() {
     sounds.start();
   };
 
-  // 🔥 TIMER FIX (setTimeout method)
+  // 🔥 TIMER (setTimeout safe version)
   useEffect(() => {
     if (!questions.length || phase !== 'playing') return;
 
@@ -135,49 +133,71 @@ export default function GamePage() {
     });
   };
 
-  // 🔹 NAME SCREEN
+  // 🔥 MODERN NAME SCREEN
   if (phase === 'name') {
     return (
-      <div style={{ textAlign: "center", color: "white", marginTop: "100px" }}>
-        <h2>Enter Your Name</h2>
+      <div style={{
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #0f172a, #020617)"
+      }}>
 
-        <input
-          value={guestName}
-          onChange={(e) => setGuestName(e.target.value)}
-          placeholder="Enter your name"
-          style={{
-            padding: "12px",
-            width: "250px",
-            borderRadius: "8px",
-            border: "1px solid #555",
-            outline: "none",
-            fontSize: "16px",
-            marginBottom: "15px",
-            backgroundColor: "#222",
+        <div style={{
+          backgroundColor: "#111827",
+          padding: "40px",
+          borderRadius: "16px",
+          boxShadow: "0 0 30px rgba(0,0,0,0.6)",
+          textAlign: "center",
+          width: "320px"
+        }}>
+
+          <h2 style={{
             color: "white",
-            textAlign: "center"
-          }}
-        />
+            marginBottom: "20px"
+          }}>
+            Enter Your Name
+          </h2>
 
-        <br />
+          <input
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            placeholder="Your name"
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "8px",
+              border: "1px solid #374151",
+              backgroundColor: "#020617",
+              color: "white",
+              fontSize: "16px",
+              marginBottom: "20px",
+              outline: "none"
+            }}
+          />
 
-        <button
-          onClick={startGame}
-          style={{
-            padding: "12px 20px",
-            borderRadius: "8px",
-            border: "none",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            fontSize: "16px",
-            cursor: "pointer",
-            transition: "0.3s"
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#45a049"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "#4CAF50"}
-        >
-          Start Game
-        </button>
+          <button
+            onClick={startGame}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: "8px",
+              border: "none",
+              background: "linear-gradient(90deg, #22c55e, #16a34a)",
+              color: "white",
+              fontSize: "16px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              transition: "0.3s"
+            }}
+            onMouseOver={(e) => e.target.style.transform = "scale(1.05)"}
+            onMouseOut={(e) => e.target.style.transform = "scale(1)"}
+          >
+            Start Game 🚀
+          </button>
+
+        </div>
       </div>
     );
   }
@@ -198,6 +218,7 @@ export default function GamePage() {
       <img
         src={q.logoUrl}
         alt="logo"
+        loading="lazy"
         style={{ width: "150px", margin: "20px" }}
       />
 
@@ -223,7 +244,8 @@ export default function GamePage() {
                 color: "white",
                 border: "1px solid #555",
                 borderRadius: "6px",
-                cursor: "pointer"
+                cursor: "pointer",
+                transition: "0.2s"
               }}
             >
               {opt}
