@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { quizAPI, scoreAPI } from '../utils/api';
@@ -11,68 +11,89 @@ const TIMER_SECONDS = 10;
 const POINTS_PER_CORRECT = 10;
 
 export default function GamePage() {
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const isGuest = searchParams.get('guest') === 'true' || !user;
 
-  const [phase, setPhase] = useState('loading');
   const [questions, setQuestions] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState(null);
+  const [feedback, setFeedback] = useState(null);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [startTime] = useState(Date.now());
+
+  // 🔥 NEW
+  const [phase, setPhase] = useState('loading'); // loading | name | playing
+  const [guestName, setGuestName] = useState('');
 
   const timerRef = useRef(null);
-  const advanceRef = useRef(null);
 
-  // Load questions
+  // 🔹 LOAD QUESTIONS
   useEffect(() => {
     quizAPI.getQuestions(QUESTION_COUNT)
       .then(res => {
         const data = res.data.data || [];
         setQuestions(data);
-        setPhase('playing');
-        sounds.start();
+
+        if (isGuest) {
+          setPhase('name'); // 🔥 ask name first
+        } else {
+          setPhase('playing');
+          sounds.start();
+        }
       })
       .catch(() => toast.error('Failed to load questions'));
   }, []);
 
-  // Timer
+  // 🔥 START GAME AFTER NAME
+  const startGame = () => {
+    if (!guestName.trim()) {
+      alert("Enter your name");
+      return;
+    }
+    setPhase('playing');
+    sounds.start();
+  };
+
+  // 🔥 TIMER (ONLY WHEN PLAYING)
   useEffect(() => {
-    if (phase !== 'playing') return;
+    if (!questions.length || phase !== 'playing') return;
+
+    clearInterval(timerRef.current);
+    setTimeLeft(TIMER_SECONDS);
 
     timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          handleAnswer(null);
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          goNext();
           return TIMER_SECONDS;
         }
-        return t - 1;
+        return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [phase]);
 
-  const advanceQuestion = () => {
-    clearTimeout(advanceRef.current);
-    advanceRef.current = setTimeout(() => {
-      const nextIdx = currentIdx + 1;
+  }, [currentIdx, phase]);
 
-      if (nextIdx >= questions.length) {
-        finishGame();
-      } else {
-        setCurrentIdx(nextIdx);
-        setSelected(null);
-        setTimeLeft(TIMER_SECONDS);
-      }
-    }, 800);
+  // 🔹 NEXT QUESTION
+  const goNext = () => {
+    if (currentIdx + 1 >= questions.length) {
+      finishGame();
+    } else {
+      setCurrentIdx(prev => prev + 1);
+      setSelected(null);
+      setFeedback(null);
+    }
   };
 
+  // 🔹 HANDLE ANSWER
   const handleAnswer = async (option) => {
+
     if (selected !== null) return;
 
     setSelected(option);
@@ -87,32 +108,64 @@ export default function GamePage() {
     } catch {}
 
     if (correct) {
+      setFeedback("correct");
       setScore(s => s + POINTS_PER_CORRECT);
       setCorrectCount(c => c + 1);
+    } else {
+      setFeedback("wrong");
     }
 
-    advanceQuestion();
+    setTimeout(goNext, 800);
   };
 
+  // 🔹 FINISH GAME
   const finishGame = async () => {
-    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
 
     try {
       await scoreAPI.submit({
         userId: user?.userId || null,
+        guestName: isGuest ? guestName : null, // 🔥 USE REAL NAME
         score,
         totalQuestions: questions.length,
         correctAnswers: correctCount,
-        timeTaken,
+        timeTaken: 0,
       });
     } catch {}
 
     navigate('/result', {
-      state: { score, correctCount, totalQuestions: questions.length, timeTaken }
+      state: {
+        score,
+        correctCount,
+        totalQuestions: questions.length,
+        playerName: user?.name || guestName || "Guest"
+      }
     });
   };
 
-  if (!questions.length) {
+  // 🔹 NAME INPUT SCREEN
+  if (phase === 'name') {
+    return (
+      <div style={{ textAlign: "center", color: "white", marginTop: "100px" }}>
+        <h2>Enter Your Name</h2>
+
+        <input
+          value={guestName}
+          onChange={(e) => setGuestName(e.target.value)}
+          placeholder="Your name"
+          style={{ padding: "10px", width: "200px", marginBottom: "10px" }}
+        />
+
+        <br />
+
+        <button onClick={startGame}>
+          Start Game
+        </button>
+      </div>
+    );
+  }
+
+  // 🔹 LOADING
+  if (!questions.length || phase !== 'playing') {
     return <div style={{ color: "white", textAlign: "center" }}>Loading...</div>;
   }
 
@@ -131,25 +184,34 @@ export default function GamePage() {
       />
 
       <div>
-        {q.options.map((opt, i) => (
-          <button
-            key={i}
-            onClick={() => handleAnswer(opt)}
-            style={{
-              display: "block",
-              margin: "10px auto",
-              padding: "12px",
-              width: "220px",
-              backgroundColor: selected === opt ? "#444" : "#222",
-              color: "white",
-              border: "1px solid #555",
-              borderRadius: "6px",
-              cursor: "pointer"
-            }}
-          >
-            {opt}
-          </button>
-        ))}
+        {q.options.map((opt, i) => {
+
+          let bg = "#222";
+
+          if (selected === opt) {
+            bg = feedback === "correct" ? "green" : "red";
+          }
+
+          return (
+            <button
+              key={i}
+              onClick={() => handleAnswer(opt)}
+              style={{
+                display: "block",
+                margin: "10px auto",
+                padding: "12px",
+                width: "220px",
+                backgroundColor: bg,
+                color: "white",
+                border: "1px solid #555",
+                borderRadius: "6px",
+                cursor: "pointer"
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
       </div>
 
       <p>Time left: {timeLeft}s</p>
