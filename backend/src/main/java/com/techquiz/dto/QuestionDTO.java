@@ -1,4 +1,4 @@
-package com.techquiz.dto.AuthDTOs;
+import com.techquiz.dto.*;
 
 import lombok.*;
 import java.util.List;

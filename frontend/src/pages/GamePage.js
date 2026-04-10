@@ -17,15 +17,12 @@ export default function GamePage() {
   const isGuest = searchParams.get('guest') === 'true' || !user;
 
   const [phase, setPhase] = useState('loading');
-  const [guestName, setGuestName] = useState('');
   const [questions, setQuestions] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selected, setSelected] = useState(null);
-  const [feedback, setFeedback] = useState(null);
   const [score, setScore] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
-  const [answers, setAnswers] = useState([]);
   const [startTime] = useState(Date.now());
 
   const timerRef = useRef(null);
@@ -37,44 +34,49 @@ export default function GamePage() {
       .then(res => {
         const data = res.data.data || [];
         setQuestions(data);
-        if (isGuest) setPhase('name');
-        else { sounds.start(); setPhase('playing'); }
+        setPhase('playing');
+        sounds.start();
       })
       .catch(() => toast.error('Failed to load questions'));
-  }, [isGuest]);
+  }, []);
 
   // Timer
   useEffect(() => {
-    if (phase !== 'playing' || selected !== null) return;
-    if (timeLeft === 0) { handleAnswer(null); return; }
+    if (phase !== 'playing') return;
 
     timerRef.current = setInterval(() => {
-      setTimeLeft(t => t - 1);
+      setTimeLeft(t => {
+        if (t <= 1) {
+          handleAnswer(null);
+          return TIMER_SECONDS;
+        }
+        return t - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timerRef.current);
-  }, [phase, timeLeft, selected]);
+  }, [phase]);
 
-  const advanceQuestion = useCallback(() => {
+  const advanceQuestion = () => {
     clearTimeout(advanceRef.current);
     advanceRef.current = setTimeout(() => {
       const nextIdx = currentIdx + 1;
+
       if (nextIdx >= questions.length) {
         finishGame();
       } else {
         setCurrentIdx(nextIdx);
         setSelected(null);
-        setFeedback(null);
         setTimeLeft(TIMER_SECONDS);
       }
-    }, 1000);
-  }, [currentIdx, questions.length]);
+    }, 800);
+  };
 
-  const handleAnswer = useCallback(async (option) => {
-    if (selected !== null || phase !== 'playing') return;
+  const handleAnswer = async (option) => {
+    if (selected !== null) return;
 
-    clearInterval(timerRef.current);
     setSelected(option);
+    clearInterval(timerRef.current);
 
     const q = questions[currentIdx];
     let correct = false;
@@ -82,31 +84,22 @@ export default function GamePage() {
     try {
       const res = await quizAPI.checkAnswer(q.id, option || '');
       correct = res.data.data;
-    } catch {
-      correct = false;
-    }
+    } catch {}
 
     if (correct) {
-      setFeedback('correct');
       setScore(s => s + POINTS_PER_CORRECT);
       setCorrectCount(c => c + 1);
-    } else {
-      setFeedback('wrong');
     }
 
-    setAnswers(a => [...a, { questionId: q.id, answer: option, correct }]);
     advanceQuestion();
-  }, [selected, phase, questions, currentIdx, advanceQuestion]);
+  };
 
-  const finishGame = useCallback(async () => {
+  const finishGame = async () => {
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-
-    setPhase('finished');
 
     try {
       await scoreAPI.submit({
         userId: user?.userId || null,
-        guestName: isGuest ? (guestName || 'Guest') : null,
         score,
         totalQuestions: questions.length,
         correctAnswers: correctCount,
@@ -115,26 +108,15 @@ export default function GamePage() {
     } catch {}
 
     navigate('/result', {
-      state: {
-        score,
-        correctCount,
-        totalQuestions: questions.length,
-        timeTaken,
-        playerName: user?.name || guestName || 'Guest',
-      },
+      state: { score, correctCount, totalQuestions: questions.length, timeTaken }
     });
-  }, [score, correctCount, questions.length, user, guestName, isGuest, startTime, navigate]);
+  };
 
-  // Prevent crash if no data
   if (!questions.length) {
-    return <div style={{ color: "white", textAlign: "center" }}>Loading questions...</div>;
+    return <div style={{ color: "white", textAlign: "center" }}>Loading...</div>;
   }
 
   const q = questions[currentIdx];
-
-  if (!q || !q.options) {
-    return <div style={{ color: "white", textAlign: "center" }}>Loading...</div>;
-  }
 
   return (
     <div className="game-page">
@@ -142,26 +124,23 @@ export default function GamePage() {
       <h2>Question {currentIdx + 1} / {questions.length}</h2>
       <h3>Score: {score}</h3>
 
-      {/* LOGO */}
       <img
         src={q.logoUrl}
         alt="logo"
         style={{ width: "150px", margin: "20px" }}
       />
 
-      {/* OPTIONS */}
       <div>
         {q.options.map((opt, i) => (
           <button
             key={i}
             onClick={() => handleAnswer(opt)}
-            disabled={selected !== null}
             style={{
               display: "block",
               margin: "10px auto",
-              padding: "10px",
-              width: "200px",
-              backgroundColor: "#222",
+              padding: "12px",
+              width: "220px",
+              backgroundColor: selected === opt ? "#444" : "#222",
               color: "white",
               border: "1px solid #555",
               borderRadius: "6px",
@@ -173,7 +152,6 @@ export default function GamePage() {
         ))}
       </div>
 
-      {/* TIMER */}
       <p>Time left: {timeLeft}s</p>
 
     </div>
